@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { fmt, calcDebt, calcTotal, Btn, Spinner } from './UI'
-import { X, Camera, Trash2, Download, Phone, FileText, Plus, CheckCircle } from 'lucide-react'
+import { X, Camera, Trash2, Download, Phone, FileText, CheckCircle } from 'lucide-react'
 import jsPDF from 'jspdf'
 
 function ProgressBar({ pagado, total }) {
@@ -19,7 +19,7 @@ function ProgressBar({ pagado, total }) {
   )
 }
 
-export default function DetallePrestamo({ loan, onClose, onUpdated }) {
+export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted }) {
   const [fotos, setFotos] = useState([])
   const [pagosHist, setPagosHist] = useState([])
   const [abono, setAbono] = useState('')
@@ -27,13 +27,11 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
   const [tab, setTab] = useState('info')
   const fileRef = useRef()
 
-  useEffect(() => {
-    if (!loan) return
-    loadData()
-  }, [loan])
+  useEffect(() => { if (loan) loadData() }, [loan])
 
   const loadData = async () => {
     setLoading(true)
@@ -51,7 +49,6 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
     if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return }
     setSaving(true)
     const nuevoPagado = (loan.pagado || 0) + monto
-    const deuda = calcDebt(loan)
     const nuevoEstado = nuevoPagado >= calcTotal(loan) ? 'pagado' : loan.estado === 'vencido' ? 'activo' : loan.estado
     await supabase.from('pagos').insert([{ prestamo_id: loan.id, monto, nota: notaAbono.trim() || null }])
     await supabase.from('prestamos').update({ pagado: nuevoPagado, estado: nuevoEstado }).eq('id', loan.id)
@@ -83,6 +80,23 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
     await supabase.storage.from('fotos-prestamos').remove([path])
     await supabase.from('fotos').delete().eq('id', foto.id)
     loadData()
+  }
+
+  const handleDeleteCliente = async () => {
+    const confirmar = confirm(`¿Estás seguro de que quieres eliminar a "${loan.nombre}"?\n\nSe eliminarán también todos sus pagos y fotos. Esta acción no se puede deshacer.`)
+    if (!confirmar) return
+    const confirmar2 = confirm(`Última confirmación: ¿Eliminar definitivamente a "${loan.nombre}"?`)
+    if (!confirmar2) return
+    setDeleting(true)
+    // Eliminar fotos del storage
+    if (fotos.length > 0) {
+      const paths = fotos.map(f => f.url.split('/fotos-prestamos/')[1]).filter(Boolean)
+      if (paths.length > 0) await supabase.storage.from('fotos-prestamos').remove(paths)
+    }
+    // Eliminar el préstamo (pagos y fotos se eliminan en cascada por la BD)
+    await supabase.from('prestamos').delete().eq('id', loan.id)
+    setDeleting(false)
+    onDeleted()
   }
 
   const exportPDF = () => {
@@ -140,15 +154,15 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
   const total = calcTotal(loan)
 
   const TABS = [
-    { id: 'info',    label: 'Detalle' },
-    { id: 'pagos',   label: 'Pagos' },
-    { id: 'fotos',   label: `Fotos (${fotos.length})` },
+    { id: 'info',  label: 'Detalle' },
+    { id: 'pagos', label: 'Pagos' },
+    { id: 'fotos', label: `Fotos (${fotos.length})` },
   ]
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '480px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
-        
+
         {/* Header */}
         <div style={{ padding: '18px 16px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
@@ -161,18 +175,21 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
             </button>
           </div>
 
-          {/* Quick actions */}
-          <div style={{ display: 'flex', gap: '8px', margin: '12px 0' }}>
-            <button onClick={openWhatsApp} style={{ flex: 1, padding: '8px', background: '#e8f5e9', color: '#2d7a1f', border: 'none', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
-              <Phone size={14} /> WhatsApp
+          {/* Acciones rápidas */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', margin: '12px 0' }}>
+            <button onClick={openWhatsApp} style={{ padding: '8px 4px', background: '#e8f5e9', color: '#2d7a1f', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
+              <Phone size={13} /> WhatsApp
             </button>
-            <button onClick={exportPDF} style={{ flex: 1, padding: '8px', background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
-              <FileText size={14} /> Exportar PDF
+            <button onClick={exportPDF} style={{ padding: '8px 4px', background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
+              <FileText size={13} /> Exportar PDF
+            </button>
+            <button onClick={handleDeleteCliente} disabled={deleting} style={{ padding: '8px 4px', background: 'var(--red-light)', color: 'var(--red)', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1 }}>
+              <Trash2 size={13} /> {deleting ? '...' : 'Eliminar'}
             </button>
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginLeft: '-0px' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
             {TABS.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '9px 4px', border: 'none', background: 'none', fontSize: '13px', fontWeight: '700', color: tab === t.id ? 'var(--blue)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent', cursor: 'pointer' }}>
                 {t.label}
@@ -181,11 +198,11 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Contenido */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
           {loading ? <Spinner /> : <>
 
-            {/* TAB INFO */}
+            {/* TAB DETALLE */}
             {tab === 'info' && <>
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '14px', marginBottom: '14px' }}>
                 {[
@@ -193,7 +210,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
                   [`Interés (${loan.interes}%/mes · ${loan.plazo} meses)`, fmt(total - loan.monto)],
                   ['Total con intereses', fmt(total)],
                   ['Ya pagó', fmt(loan.pagado || 0)],
-                ].map(([k,v]) => (
+                ].map(([k, v]) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>{k}</span>
                     <span style={{ fontWeight: '700' }}>{v}</span>
@@ -204,22 +221,24 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
                 </div>
                 <ProgressBar pagado={loan.pagado || 0} total={total} />
               </div>
+
               {loan.notas && (
                 <div style={{ background: '#fffbea', border: '1px solid #f5e397', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '14px' }}>
                   <p style={{ fontSize: '12px', fontWeight: '700', color: '#7a6000', marginBottom: '4px', textTransform: 'uppercase' }}>Notas</p>
                   <p style={{ fontSize: '14px', color: '#555' }}>{loan.notas}</p>
                 </div>
               )}
+
               {/* Registrar abono */}
               <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '14px' }}>
                 <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Registrar abono</p>
                 <input type="number" placeholder="Monto del pago ($)" value={abono} onChange={e => setAbono(e.target.value)}
-                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none', marginBottom: '8px' }}
-                  onFocus={e => e.target.style.borderColor='var(--blue)'} onBlur={e => e.target.style.borderColor='var(--border)'}
+                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none', marginBottom: '8px', background: '#fff' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--blue)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
                 <input type="text" placeholder="Nota del pago (opcional)" value={notaAbono} onChange={e => setNotaAbono(e.target.value)}
-                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', outline: 'none', marginBottom: '10px' }}
-                  onFocus={e => e.target.style.borderColor='var(--blue)'} onBlur={e => e.target.style.borderColor='var(--border)'}
+                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', outline: 'none', marginBottom: '10px', background: '#fff' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--blue)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}
                 />
                 <Btn onClick={handleAbono} disabled={saving} style={{ width: '100%' }}>
                   <CheckCircle size={18} /> {saving ? 'Guardando...' : 'Registrar pago'}
@@ -232,7 +251,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
               {pagosHist.length === 0
                 ? <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Sin pagos registrados aún</div>
                 : pagosHist.map((p, i) => (
-                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < pagosHist.length-1 ? '1px solid var(--bg)' : 'none' }}>
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < pagosHist.length - 1 ? '1px solid var(--bg)' : 'none' }}>
                     <div>
                       <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--green)' }}>{fmt(p.monto)}</p>
                       <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(p.created_at).toLocaleDateString('es-CO')}</p>
@@ -259,18 +278,10 @@ export default function DetallePrestamo({ loan, onClose, onUpdated }) {
                     {fotos.map(f => (
                       <div key={f.id} style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '1' }}>
                         <img src={f.url} alt={f.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button onClick={() => handleDeleteFoto(f)} style={{
-                          position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)',
-                          border: 'none', borderRadius: '50%', width: '28px', height: '28px',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                        }}>
+                        <button onClick={() => handleDeleteFoto(f)} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                           <Trash2 size={14} color="white" />
                         </button>
-                        <a href={f.url} target="_blank" rel="noopener" style={{
-                          position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.6)',
-                          borderRadius: '50%', width: '28px', height: '28px',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
+                        <a href={f.url} target="_blank" rel="noopener" style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Download size={14} color="white" />
                         </a>
                         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '20px 8px 6px' }}>

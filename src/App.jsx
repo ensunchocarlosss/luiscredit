@@ -69,6 +69,7 @@ export default function App() {
           loan={loans.find(l => l.id === selected.id) || selected}
           onClose={() => setSelected(null)}
           onUpdated={() => { loadAll() }}
+          onDeleted={() => { setSelected(null); loadAll() }}
         />
       )}
     </div>
