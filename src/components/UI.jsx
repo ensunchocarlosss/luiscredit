@@ -18,26 +18,26 @@ export function Badge({ estado }) {
     </span>
   )
 }
-
+ 
 export function fmt(n) {
   return '$' + Math.round(n || 0).toLocaleString('es-CO')
 }
-
+ 
 export function formatMiles(valor) {
   const soloNumeros = String(valor).replace(/\D/g, '')
   if (!soloNumeros) return ''
   return soloNumeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
-
+ 
 export function calcDebt(loan) {
   const total = loan.monto * (1 + (loan.interes / 100) * loan.plazo)
   return Math.max(0, total - (loan.pagado || 0))
 }
-
+ 
 export function calcTotal(loan) {
   return loan.monto * (1 + (loan.interes / 100) * loan.plazo)
 }
-
+ 
 export function Spinner() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
@@ -52,7 +52,7 @@ export function Spinner() {
     </div>
   )
 }
-
+ 
 export function Empty({ icon, text }) {
   return (
     <div style={{ textAlign: 'center', padding: '56px 16px', color: 'var(--text-muted)' }}>
@@ -61,7 +61,7 @@ export function Empty({ icon, text }) {
     </div>
   )
 }
-
+ 
 export function Card({ children, onClick, style = {} }) {
   return (
     <div onClick={onClick} style={{
@@ -81,7 +81,7 @@ export function Card({ children, onClick, style = {} }) {
     </div>
   )
 }
-
+ 
 export function Btn({ children, onClick, variant = 'primary', style = {}, disabled = false }) {
   const base = {
     padding: '12px 16px', borderRadius: 'var(--radius)', fontSize: '15px',
@@ -112,7 +112,7 @@ export function Btn({ children, onClick, variant = 'primary', style = {}, disabl
     </button>
   )
 }
-
+ 
 export function Input({ label, type = 'text', value, onChange, placeholder, min, step }) {
   return (
     <div style={{ marginBottom: '14px' }}>
@@ -133,7 +133,14 @@ export function Input({ label, type = 'text', value, onChange, placeholder, min,
           outline: 'none', background: 'var(--surface2)',
           color: 'var(--text)', transition: 'border-color 0.2s'
         }}
-        export function InputMonto({ label, value, onChange, placeholder }) {
+        onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border2)'}
+      />
+    </div>
+  )
+}
+ 
+export function InputMonto({ label, value, onChange, placeholder }) {
   const handleChange = (e) => {
     const crudo = e.target.value.replace(/\D/g, '')
     onChange(crudo)
@@ -163,13 +170,7 @@ export function Input({ label, type = 'text', value, onChange, placeholder, min,
     </div>
   )
 }
-        onFocus={e => e.target.style.borderColor = 'var(--gold)'}
-        onBlur={e => e.target.style.borderColor = 'var(--border2)'}
-      />
-    </div>
-  )
-}
-
+ 
 export function Modal({ open, onClose, title, children }) {
   if (!open) return null
   return (
@@ -193,3 +194,4 @@ export function Modal({ open, onClose, title, children }) {
     </div>
   )
 }
+ 
