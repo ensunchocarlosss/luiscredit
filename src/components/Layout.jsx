@@ -3,22 +3,38 @@ import { Building2, Home, Users, PlusCircle, Bell, History, LogOut, BarChart2 } 
 export function Topbar({ onLogout }) {
   return (
     <div style={{
-      background: 'var(--surface)', padding: '14px 16px 10px',
-      borderBottom: '1px solid var(--border)', display: 'flex',
-      justifyContent: 'space-between', alignItems: 'center',
-      position: 'sticky', top: 0, zIndex: 10
+      background: 'linear-gradient(180deg, #0d140d, #111811)',
+      padding: '16px 16px 12px',
+      borderBottom: '1px solid var(--border2)',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      position: 'sticky', top: 0, zIndex: 10,
+      boxShadow: '0 2px 20px rgba(0,0,0,0.6)'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Building2 size={22} color="var(--blue)" strokeWidth={2} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{
+          width: '38px', height: '38px', borderRadius: '10px',
+          background: 'linear-gradient(135deg, #1a2e1a, #0d140d)',
+          border: '1.5px solid var(--gold)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 12px rgba(212,175,55,0.2)'
+        }}>
+          <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gold)', fontFamily: 'Syne, serif', lineHeight: 1 }}>$</span>
+        </div>
         <div>
-          <h1 style={{ fontSize: '19px', fontWeight: '700', lineHeight: 1 }}>
-            Luis<span style={{ color: 'var(--blue)' }}>Crédit</span>
+          <h1 style={{ fontSize: '20px', fontWeight: '800', lineHeight: 1, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.5px' }}>
+            Luis<span style={{ color: 'var(--gold)' }}>Crédit</span>
           </h1>
-          <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>Gestión de préstamos</p>
+          <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Gestión de préstamos</p>
         </div>
       </div>
-      <button onClick={onLogout} style={{ background: 'var(--bg)', border: 'none', borderRadius: '8px', padding: '8px', color: 'var(--text-secondary)', display: 'flex' }}>
-        <LogOut size={20} />
+      <button onClick={onLogout} style={{
+        background: 'var(--surface2)', border: '1px solid var(--border2)',
+        borderRadius: '10px', padding: '8px', color: 'var(--text-secondary)',
+        display: 'flex', transition: 'color 0.2s'
+      }}>
+        <LogOut size={18} />
       </button>
     </div>
   )
@@ -37,24 +53,28 @@ export function Nav({ active, onChange, alertCount }) {
   return (
     <div style={{
       display: 'flex', background: 'var(--surface)',
-      borderBottom: '1px solid var(--border)', position: 'sticky', top: '58px', zIndex: 9, overflowX: 'auto'
+      borderBottom: '1px solid var(--border2)',
+      position: 'sticky', top: '66px', zIndex: 9, overflowX: 'auto'
     }}>
       {tabs.map(({ id, label, Icon }) => (
         <button key={id} onClick={() => onChange(id)} style={{
-          flex: '1 0 auto', minWidth: '56px', padding: '9px 4px 7px', border: 'none',
-          background: 'transparent', fontSize: '10px', fontWeight: '600',
-          color: active === id ? 'var(--blue)' : 'var(--text-muted)',
-          borderBottom: active === id ? '2px solid var(--blue)' : '2px solid transparent',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-          position: 'relative', cursor: 'pointer'
+          flex: '1 0 auto', minWidth: '54px', padding: '9px 4px 7px', border: 'none',
+          background: 'transparent', fontSize: '10px', fontWeight: '700',
+          fontFamily: 'Syne, sans-serif',
+          color: active === id ? 'var(--gold)' : 'var(--text-muted)',
+          borderBottom: active === id ? '2px solid var(--gold)' : '2px solid transparent',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+          position: 'relative', cursor: 'pointer', letterSpacing: '0.03em',
+          transition: 'color 0.2s'
         }}>
-          <Icon size={20} strokeWidth={active === id ? 2.5 : 1.8} />
+          <Icon size={19} strokeWidth={active === id ? 2.5 : 1.8} />
           {label}
           {id === 'alertas' && alertCount > 0 && (
             <span style={{
-              position: 'absolute', top: '6px', right: '8px',
+              position: 'absolute', top: '5px', right: '6px',
               background: 'var(--red)', color: 'white', fontSize: '9px',
-              fontWeight: '700', borderRadius: '10px', padding: '1px 5px', minWidth: '16px', textAlign: 'center'
+              fontWeight: '700', borderRadius: '10px', padding: '1px 5px',
+              minWidth: '16px', textAlign: 'center'
             }}>{alertCount}</span>
           )}
         </button>
