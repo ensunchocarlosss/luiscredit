@@ -1,10 +1,10 @@
-import { Building2, Home, Users, PlusCircle, Bell, History, LogOut, BarChart2 } from 'lucide-react'
+import { Home, Users, PlusCircle, Bell, History, LogOut, BarChart2 } from 'lucide-react'
 
 export function Topbar({ onLogout }) {
   return (
     <div style={{
       background: 'linear-gradient(180deg, #0d140d, #111811)',
-      padding: '16px 16px 12px',
+      padding: '10px 16px',
       borderBottom: '1px solid var(--border2)',
       display: 'flex',
       justifyContent: 'space-between',
@@ -13,17 +13,13 @@ export function Topbar({ onLogout }) {
       boxShadow: '0 2px 20px rgba(0,0,0,0.6)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '10px',
-          background: 'linear-gradient(135deg, #1a2e1a, #0d140d)',
-          border: '1.5px solid var(--gold)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 12px rgba(212,175,55,0.2)'
-        }}>
-          <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--gold)', fontFamily: 'Syne, serif', lineHeight: 1 }}>$</span>
-        </div>
+        <img
+          src="/icon-192.png"
+          alt="LuisCrédit"
+          style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }}
+        />
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: '800', lineHeight: 1, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.5px' }}>
+          <h1 style={{ fontSize: '19px', fontWeight: '800', lineHeight: 1, fontFamily: 'Syne, sans-serif', letterSpacing: '-0.5px', color: 'var(--text)' }}>
             Luis<span style={{ color: 'var(--gold)' }}>Crédit</span>
           </h1>
           <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Gestión de préstamos</p>
@@ -32,7 +28,7 @@ export function Topbar({ onLogout }) {
       <button onClick={onLogout} style={{
         background: 'var(--surface2)', border: '1px solid var(--border2)',
         borderRadius: '10px', padding: '8px', color: 'var(--text-secondary)',
-        display: 'flex', transition: 'color 0.2s'
+        display: 'flex', cursor: 'pointer'
       }}>
         <LogOut size={18} />
       </button>
@@ -54,7 +50,7 @@ export function Nav({ active, onChange, alertCount }) {
     <div style={{
       display: 'flex', background: 'var(--surface)',
       borderBottom: '1px solid var(--border2)',
-      position: 'sticky', top: '66px', zIndex: 9, overflowX: 'auto'
+      position: 'sticky', top: '60px', zIndex: 9, overflowX: 'auto'
     }}>
       {tabs.map(({ id, label, Icon }) => (
         <button key={id} onClick={() => onChange(id)} style={{
