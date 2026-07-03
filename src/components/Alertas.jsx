@@ -21,32 +21,37 @@ export default function Alertas({ loans, loading, onSelect }) {
   return (
     <div style={{ padding: '14px', paddingBottom: '80px' }}>
       {vencidos.length > 0 && <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-          <AlertTriangle size={16} color="var(--red)" />
-          <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pagos vencidos ({vencidos.length})</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
+          <AlertTriangle size={15} color="var(--red)" />
+          <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Syne, sans-serif' }}>
+            Pagos vencidos ({vencidos.length})
+          </p>
         </div>
         {vencidos.map(l => (
           <div key={l.id} onClick={() => onSelect(l)} style={{
-            background: 'var(--red-light)', border: '1px solid #f5c6c3', borderRadius: 'var(--radius-lg)',
-            padding: '14px 16px', marginBottom: '10px', cursor: 'pointer'
+            background: 'var(--red-light)', border: '1px solid rgba(224,82,82,0.3)',
+            borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: '10px', cursor: 'pointer',
+            transition: 'border-color 0.2s'
           }}>
-            <p style={{ fontSize: '16px', fontWeight: '700', color: '#7b1a1a', marginBottom: '4px' }}>{l.nombre}</p>
+            <p style={{ fontSize: '16px', fontWeight: '800', fontFamily: 'Syne, sans-serif', color: 'var(--text)', marginBottom: '4px' }}>{l.nombre}</p>
             <p style={{ fontSize: '13px', color: 'var(--red)' }}>Debe: {fmt(calcDebt(l))} — plazo vencido</p>
           </div>
         ))}
       </>}
 
       {proximos.length > 0 && <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '14px 0 10px' }}>
-          <Clock size={16} color="var(--amber)" />
-          <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Vencen esta semana ({proximos.length})</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', margin: '14px 0 10px' }}>
+          <Clock size={15} color="var(--amber)" />
+          <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Syne, sans-serif' }}>
+            Vencen esta semana ({proximos.length})
+          </p>
         </div>
         {proximos.map(l => (
           <div key={l.id} onClick={() => onSelect(l)} style={{
-            background: 'var(--amber-light)', border: '1px solid #f5d99a', borderRadius: 'var(--radius-lg)',
-            padding: '14px 16px', marginBottom: '10px', cursor: 'pointer'
+            background: 'var(--amber-light)', border: '1px solid rgba(224,160,32,0.3)',
+            borderRadius: 'var(--radius-lg)', padding: '14px 16px', marginBottom: '10px', cursor: 'pointer'
           }}>
-            <p style={{ fontSize: '16px', fontWeight: '700', color: '#7a4a00', marginBottom: '4px' }}>{l.nombre}</p>
+            <p style={{ fontSize: '16px', fontWeight: '800', fontFamily: 'Syne, sans-serif', color: 'var(--text)', marginBottom: '4px' }}>{l.nombre}</p>
             <p style={{ fontSize: '13px', color: 'var(--amber)' }}>Debe: {fmt(calcDebt(l))} — vence pronto</p>
           </div>
         ))}
