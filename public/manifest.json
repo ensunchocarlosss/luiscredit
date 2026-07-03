@@ -3,6 +3,7 @@
   "short_name": "LuisCrédit",
   "description": "Gestión profesional de préstamos",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#080c08",
   "theme_color": "#080c08",
