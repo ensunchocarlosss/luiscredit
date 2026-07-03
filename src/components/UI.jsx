@@ -23,6 +23,12 @@ export function fmt(n) {
   return '$' + Math.round(n || 0).toLocaleString('es-CO')
 }
 
+export function formatMiles(valor) {
+  const soloNumeros = String(valor).replace(/\D/g, '')
+  if (!soloNumeros) return ''
+  return soloNumeros.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
 export function calcDebt(loan) {
   const total = loan.monto * (1 + (loan.interes / 100) * loan.plazo)
   return Math.max(0, total - (loan.pagado || 0))
@@ -127,6 +133,36 @@ export function Input({ label, type = 'text', value, onChange, placeholder, min,
           outline: 'none', background: 'var(--surface2)',
           color: 'var(--text)', transition: 'border-color 0.2s'
         }}
+        export function InputMonto({ label, value, onChange, placeholder }) {
+  const handleChange = (e) => {
+    const crudo = e.target.value.replace(/\D/g, '')
+    onChange(crudo)
+  }
+  return (
+    <div style={{ marginBottom: '14px' }}>
+      {label && (
+        <label style={{
+          fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700',
+          fontFamily: 'Syne, sans-serif', display: 'block', marginBottom: '6px',
+          textTransform: 'uppercase', letterSpacing: '0.07em'
+        }}>{label}</label>
+      )}
+      <input
+        type="text" inputMode="numeric" value={formatMiles(value)} onChange={handleChange}
+        placeholder={placeholder}
+        style={{
+          width: '100%', padding: '11px 14px',
+          border: '1px solid var(--border2)',
+          borderRadius: 'var(--radius)', fontSize: '15px',
+          outline: 'none', background: 'var(--surface2)',
+          color: 'var(--text)', transition: 'border-color 0.2s'
+        }}
+        onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+        onBlur={e => e.target.style.borderColor = 'var(--border2)'}
+      />
+    </div>
+  )
+}
         onFocus={e => e.target.style.borderColor = 'var(--gold)'}
         onBlur={e => e.target.style.borderColor = 'var(--border2)'}
       />
