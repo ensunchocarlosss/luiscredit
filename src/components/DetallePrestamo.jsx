@@ -300,7 +300,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
 
             {/* TAB FOTOS */}
             {tab === 'fotos' && <>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFoto} style={{ display: 'none' }} />
+             <input ref={fileRef} type="file" accept="image/*" onChange={handleFoto} style={{ display: 'none' }} />
               <Btn onClick={() => fileRef.current.click()} disabled={uploading} style={{ width: '100%', marginBottom: '14px' }} variant="secondary">
                 <Camera size={17} /> {uploading ? 'Subiendo...' : 'Agregar foto / comprobante'}
               </Btn>
