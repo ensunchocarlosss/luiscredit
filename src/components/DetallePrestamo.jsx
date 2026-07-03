@@ -34,6 +34,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
   const [deleting, setDeleting] = useState(false)
   const [tab, setTab] = useState('info')
   const fileRef = useRef()
+  const [fotoAmpliada, setFotoAmpliada] = useState(null)
  
   useEffect(() => { if (loan) loadData() }, [loan])
  
@@ -340,7 +341,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
                 : <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     {fotos.map(f => (
                       <div key={f.id} style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border2)', aspectRatio: '1', background: 'var(--surface2)' }}>
-                        <img src={f.url} alt={f.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={f.url} alt={f.nombre} onClick={() => setFotoAmpliada(f)} style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
                         <button onClick={() => handleDeleteFoto(f)} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                           <Trash2 size={13} color="white" />
                         </button>
@@ -358,7 +359,40 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
           </>}
         </div>
       </div>
+
+      {/* Vista previa ampliada de foto */}
+      {fotoAmpliada && (
+        <div
+          onClick={() => setFotoAmpliada(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)',
+            zIndex: 300, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}
+        >
+          <div style={{ position: 'absolute', top: '16px', right: '16px', display: 'flex', gap: '10px' }}>
+            <a
+              href={fotoAmpliada.url} target="_blank" rel="noopener" download
+              onClick={e => e.stopPropagation()}
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Download size={18} color="white" />
+            </a>
+            <button
+              onClick={() => setFotoAmpliada(null)}
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            >
+              <X size={18} color="white" />
+            </button>
+          </div>
+          <img
+            src={fotoAmpliada.url} alt={fotoAmpliada.nombre}
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '10px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)' }}
+          />
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '14px', textAlign: 'center' }}>{fotoAmpliada.nombre}</p>
+        </div>
+      )}
     </div>
   )
 }
- 
