@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './components/Login'
+import LoadingScreen from './components/LoadingScreen'
 import { Topbar, Nav } from './components/Layout'
 import Inicio from './components/Inicio'
 import Clientes from './components/Clientes'
@@ -17,6 +18,7 @@ export default function App() {
   const [loans, setLoans] = useState([])
   const [pagos, setPagos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [firstLoad, setFirstLoad] = useState(true)
   const [selected, setSelected] = useState(null)
 
   useEffect(() => { if (loggedIn) loadAll() }, [loggedIn])
@@ -39,6 +41,7 @@ export default function App() {
     setLoans(updated)
     setPagos(p || [])
     setLoading(false)
+    setFirstLoad(false)
   }
 
   const alertCount = loans.filter(l => {
@@ -49,6 +52,7 @@ export default function App() {
   }).length
 
   if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />
+  if (firstLoad) return <LoadingScreen />
 
   return (
     <div className="app">
