@@ -31,20 +31,31 @@ export default function NuevoPrestamo({ onSaved }) {
     onSaved()
   }
 
+  const sectionStyle = {
+    background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
+    border: '1px solid var(--border2)', padding: '16px', marginBottom: '14px'
+  }
+  const sectionLabel = {
+    fontSize: '11px', fontWeight: '700', color: 'var(--gold)',
+    marginBottom: '14px', textTransform: 'uppercase',
+    letterSpacing: '0.07em', fontFamily: 'Syne, sans-serif',
+    display: 'flex', alignItems: 'center', gap: '6px'
+  }
+
   return (
     <div style={{ padding: '14px', paddingBottom: '80px' }}>
-      <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>
+      <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px', fontFamily: 'Syne, sans-serif' }}>
         Nuevo préstamo
       </p>
 
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '16px', marginBottom: '14px' }}>
-        <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Datos del cliente</p>
+      <div style={sectionStyle}>
+        <p style={sectionLabel}>👤 Datos del cliente</p>
         <Input label="Nombre completo *" value={form.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Ej: Juan García" />
         <Input label="Teléfono (opcional)" type="tel" value={form.telefono} onChange={e => set('telefono', e.target.value)} placeholder="Ej: 3001234567" />
       </div>
 
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '16px', marginBottom: '14px' }}>
-        <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Condiciones del préstamo</p>
+      <div style={sectionStyle}>
+        <p style={sectionLabel}>💰 Condiciones del préstamo</p>
         <Input label="Monto prestado ($) *" type="number" value={form.monto} onChange={e => set('monto', e.target.value)} placeholder="Ej: 500000" min="0" />
         <Input label="Interés mensual (%) *" type="number" value={form.interes} onChange={e => set('interes', e.target.value)} placeholder="Ej: 5" min="0" step="0.1" />
         <Input label="Plazo (meses) *" type="number" value={form.plazo} onChange={e => set('plazo', e.target.value)} placeholder="Ej: 6" min="1" />
@@ -52,29 +63,38 @@ export default function NuevoPrestamo({ onSaved }) {
       </div>
 
       {showPreview && (
-        <div style={{ background: '#f0f7ff', borderRadius: 'var(--radius-lg)', border: '1px solid #c8e0f8', padding: '16px', marginBottom: '14px' }}>
-          <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resumen del préstamo</p>
-          {[['Capital', fmt(monto)], ['Interés total', fmt(intTotal)], ['Cuota mensual', fmt(total / plazo) + '/mes']].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '4px 0', color: 'var(--text-secondary)' }}>
-              <span>{k}</span><span style={{ fontWeight: '600', color: 'var(--text)' }}>{v}</span>
+        <div style={{
+          background: 'linear-gradient(135deg, #1a1200, #231900)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid rgba(212,175,55,0.35)',
+          padding: '16px', marginBottom: '14px',
+          boxShadow: '0 0 20px rgba(212,175,55,0.06)'
+        }}>
+          <p style={{ ...sectionLabel, color: 'var(--gold)' }}>📊 Resumen del préstamo</p>
+          {[['Capital', fmt(monto)], ['Interés total', fmt(intTotal)], ['Cuota aprox./mes', fmt(total / plazo)]].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '5px 0', color: 'rgba(212,175,55,0.6)', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+              <span>{k}</span>
+              <span style={{ fontWeight: '700', color: 'var(--gold)' }}>{v}</span>
             </div>
           ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', padding: '10px 0 0', marginTop: '6px', borderTop: '1px solid #c8e0f8', color: 'var(--blue)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '17px', fontWeight: '800', padding: '12px 0 0', color: 'var(--gold)', fontFamily: 'Syne, sans-serif' }}>
             <span>Total a cobrar</span><span>{fmt(total)}</span>
           </div>
         </div>
       )}
 
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '16px', marginBottom: '14px' }}>
-        <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notas adicionales</p>
-        <textarea value={form.notas} onChange={e => set('notas', e.target.value)} placeholder="Ej: Garantía entregada, acuerdo especial, etc." rows={3}
-          style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
-          onFocus={e => e.target.style.borderColor = 'var(--blue)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+      <div style={sectionStyle}>
+        <p style={sectionLabel}>📝 Notas adicionales</p>
+        <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
+          placeholder="Ej: Garantía entregada, acuerdo especial, firmó pagaré..."
+          rows={3}
+          style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border2)', borderRadius: 'var(--radius)', fontSize: '14px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', background: 'var(--surface2)', color: 'var(--text)', transition: 'border-color 0.2s' }}
+          onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border2)'}
         />
       </div>
 
-      <Btn onClick={handleSave} disabled={saving} style={{ width: '100%' }}>
+      <Btn onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
         <Save size={18} /> {saving ? 'Guardando...' : 'Guardar préstamo'}
       </Btn>
     </div>
