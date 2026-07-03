@@ -8,12 +8,16 @@ function ProgressBar({ pagado, total }) {
   const pct = total > 0 ? Math.min(100, (pagado / total) * 100) : 0
   return (
     <div style={{ margin: '12px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '5px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>
         <span>Progreso de pago</span>
-        <span style={{ fontWeight: '700' }}>{Math.round(pct)}%</span>
+        <span style={{ fontWeight: '700', color: pct >= 100 ? '#4fc44f' : 'var(--gold)' }}>{Math.round(pct)}%</span>
       </div>
-      <div style={{ height: '8px', background: 'var(--bg)', borderRadius: '4px', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'var(--green)' : 'var(--blue)', borderRadius: '4px', transition: 'width 0.4s' }} />
+      <div style={{ height: '7px', background: 'var(--surface2)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+        <div style={{
+          height: '100%', width: `${pct}%`,
+          background: pct >= 100 ? 'linear-gradient(90deg,#2d6a2d,#4fc44f)' : 'linear-gradient(90deg,var(--gold-dark),var(--gold))',
+          borderRadius: '4px', transition: 'width 0.5s ease'
+        }} />
       </div>
     </div>
   )
@@ -83,17 +87,15 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
   }
 
   const handleDeleteCliente = async () => {
-    const confirmar = confirm(`¿Estás seguro de que quieres eliminar a "${loan.nombre}"?\n\nSe eliminarán también todos sus pagos y fotos. Esta acción no se puede deshacer.`)
-    if (!confirmar) return
-    const confirmar2 = confirm(`Última confirmación: ¿Eliminar definitivamente a "${loan.nombre}"?`)
-    if (!confirmar2) return
+    const c1 = confirm(`¿Eliminar a "${loan.nombre}"?\n\nSe eliminarán también todos sus pagos y fotos. Esta acción no se puede deshacer.`)
+    if (!c1) return
+    const c2 = confirm(`Última confirmación: ¿Eliminar definitivamente a "${loan.nombre}"?`)
+    if (!c2) return
     setDeleting(true)
-    // Eliminar fotos del storage
     if (fotos.length > 0) {
       const paths = fotos.map(f => f.url.split('/fotos-prestamos/')[1]).filter(Boolean)
       if (paths.length > 0) await supabase.storage.from('fotos-prestamos').remove(paths)
     }
-    // Eliminar el préstamo (pagos y fotos se eliminan en cascada por la BD)
     await supabase.from('prestamos').delete().eq('id', loan.id)
     setDeleting(false)
     onDeleted()
@@ -103,43 +105,44 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     const doc = new jsPDF()
     const total = calcTotal(loan)
     const deuda = calcDebt(loan)
-    doc.setFontSize(18); doc.setTextColor(24, 95, 165)
-    doc.text('LuisCredit - Resumen de Prestamo', 20, 20)
-    doc.setFontSize(12); doc.setTextColor(0, 0, 0)
-    doc.text(`Cliente: ${loan.nombre}`, 20, 35)
-    if (loan.telefono) doc.text(`Telefono: ${loan.telefono}`, 20, 43)
-    doc.text(`Fecha: ${loan.fecha}`, 20, loan.telefono ? 51 : 43)
-    let y = loan.telefono ? 63 : 55
-    doc.setFontSize(11); doc.setTextColor(100, 100, 100)
-    doc.text('CONDICIONES', 20, y); y += 8
+    doc.setFillColor(10, 10, 10)
+    doc.rect(0, 0, 210, 40, 'F')
+    doc.setFontSize(22); doc.setTextColor(212, 175, 55)
+    doc.text('LuisCredit', 20, 18)
+    doc.setFontSize(11); doc.setTextColor(150, 130, 50)
+    doc.text('Gestion de Prestamos', 20, 27)
+    doc.setFontSize(10); doc.setTextColor(100, 100, 100)
+    doc.text('Resumen de Prestamo', 20, 34)
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(16); doc.setTextColor(30, 30, 30)
+    doc.text(loan.nombre, 20, 52)
+    if (loan.telefono) { doc.setFontSize(11); doc.setTextColor(100,100,100); doc.text('Tel: ' + loan.telefono, 20, 60) }
+    let y = loan.telefono ? 72 : 64
+    doc.setFontSize(10); doc.setTextColor(100,100,100); doc.text('CONDICIONES', 20, y); y += 7
     doc.setTextColor(0,0,0)
-    doc.text(`Capital: ${fmt(loan.monto)}`, 20, y); y += 7
-    doc.text(`Interes mensual: ${loan.interes}%`, 20, y); y += 7
-    doc.text(`Plazo: ${loan.plazo} meses`, 20, y); y += 7
-    doc.text(`Interes total: ${fmt(total - loan.monto)}`, 20, y); y += 7
-    doc.text(`Total a cobrar: ${fmt(total)}`, 20, y); y += 12
-    doc.setFontSize(11); doc.setTextColor(100,100,100)
-    doc.text('ESTADO ACTUAL', 20, y); y += 8
+    doc.text('Capital: ' + fmt(loan.monto), 20, y); y += 6
+    doc.text('Interes mensual: ' + loan.interes + '%', 20, y); y += 6
+    doc.text('Plazo: ' + loan.plazo + ' meses', 20, y); y += 6
+    doc.text('Total con intereses: ' + fmt(total), 20, y); y += 12
+    doc.setTextColor(100,100,100); doc.text('ESTADO ACTUAL', 20, y); y += 7
     doc.setTextColor(0,0,0)
-    doc.text(`Pagado: ${fmt(loan.pagado || 0)}`, 20, y); y += 7
-    doc.setTextColor(192, 57, 43)
-    doc.text(`Saldo pendiente: ${fmt(deuda)}`, 20, y); y += 12
+    doc.text('Pagado: ' + fmt(loan.pagado || 0), 20, y); y += 6
+    doc.setTextColor(180, 0, 0)
+    doc.text('Saldo pendiente: ' + fmt(deuda), 20, y); y += 12
     if (pagosHist.length > 0) {
-      doc.setTextColor(100,100,100); doc.setFontSize(11)
-      doc.text('HISTORIAL DE PAGOS', 20, y); y += 8
-      doc.setTextColor(0,0,0); doc.setFontSize(10)
+      doc.setTextColor(100,100,100); doc.setFontSize(10)
+      doc.text('HISTORIAL DE PAGOS', 20, y); y += 7
+      doc.setTextColor(0,0,0)
       pagosHist.forEach(p => {
-        doc.text(`${new Date(p.created_at).toLocaleDateString('es-CO')} — ${fmt(p.monto)}${p.nota ? ' (' + p.nota + ')' : ''}`, 20, y)
+        doc.text(new Date(p.created_at).toLocaleDateString('es-CO') + ' — ' + fmt(p.monto) + (p.nota ? ' (' + p.nota + ')' : ''), 20, y)
         y += 6
       })
     }
     if (loan.notas) {
-      y += 4; doc.setFontSize(11); doc.setTextColor(100,100,100)
-      doc.text('NOTAS', 20, y); y += 8
-      doc.setTextColor(0,0,0); doc.setFontSize(10)
-      doc.text(loan.notas, 20, y)
+      y += 4; doc.setTextColor(100,100,100); doc.text('NOTAS', 20, y); y += 7
+      doc.setTextColor(0,0,0); doc.text(loan.notas, 20, y)
     }
-    doc.save(`LuisCredit-${loan.nombre}.pdf`)
+    doc.save('LuisCredit-' + loan.nombre + '.pdf')
   }
 
   const openWhatsApp = () => {
@@ -154,94 +157,122 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
   const total = calcTotal(loan)
 
   const TABS = [
-    { id: 'info',  label: 'Detalle' },
-    { id: 'pagos', label: 'Pagos' },
-    { id: 'fotos', label: `Fotos (${fotos.length})` },
+    { id: 'info',  label: '📋 Detalle' },
+    { id: 'pagos', label: `💵 Pagos (${pagosHist.length})` },
+    { id: 'fotos', label: `📷 Fotos (${fotos.length})` },
   ]
 
+  const inputStyle = {
+    width: '100%', padding: '11px 14px', border: '1px solid var(--border2)',
+    borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none',
+    background: 'var(--surface2)', color: 'var(--text)', marginBottom: '8px',
+    transition: 'border-color 0.2s'
+  }
+
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: '480px', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: 'var(--surface)', borderRadius: '20px 20px 0 0',
+        border: '1px solid var(--border2)', borderBottom: 'none',
+        width: '100%', maxWidth: '480px', maxHeight: '94vh',
+        display: 'flex', flexDirection: 'column',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.7)'
+      }}>
+
+        {/* Handle */}
+        <div style={{ width: '40px', height: '4px', background: 'var(--border2)', borderRadius: '2px', margin: '12px auto 0' }} />
 
         {/* Header */}
-        <div style={{ padding: '18px 16px 0', flexShrink: 0 }}>
+        <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: '800' }}>{loan.nombre}</h2>
-              {loan.telefono && <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>📞 {loan.telefono}</p>}
+              <h2 style={{ fontSize: '20px', fontWeight: '800', fontFamily: 'Syne, sans-serif', color: 'var(--text)' }}>{loan.nombre}</h2>
+              {loan.telefono && <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>📞 {loan.telefono}</p>}
             </div>
-            <button onClick={onClose} style={{ background: 'var(--bg)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <X size={18} />
+            <button onClick={onClose} style={{ background: 'var(--surface2)', border: '1px solid var(--border2)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+              <X size={16} />
             </button>
           </div>
 
-          {/* Acciones rápidas */}
+          {/* Quick actions */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', margin: '12px 0' }}>
-            <button onClick={openWhatsApp} style={{ padding: '8px 4px', background: '#e8f5e9', color: '#2d7a1f', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
+            <button onClick={openWhatsApp} style={{ padding: '8px 4px', background: 'rgba(45,106,45,0.2)', color: '#4fc44f', border: '1px solid rgba(79,196,79,0.25)', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '700', fontFamily: 'Syne, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
               <Phone size={13} /> WhatsApp
             </button>
-            <button onClick={exportPDF} style={{ padding: '8px 4px', background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
-              <FileText size={13} /> Exportar PDF
+            <button onClick={exportPDF} style={{ padding: '8px 4px', background: 'var(--gold-dim)', color: 'var(--gold)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '700', fontFamily: 'Syne, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
+              <FileText size={13} /> PDF
             </button>
-            <button onClick={handleDeleteCliente} disabled={deleting} style={{ padding: '8px 4px', background: 'var(--red-light)', color: 'var(--red)', border: 'none', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1 }}>
+            <button onClick={handleDeleteCliente} disabled={deleting} style={{ padding: '8px 4px', background: 'var(--red-light)', color: 'var(--red)', border: '1px solid rgba(224,82,82,0.25)', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '700', fontFamily: 'Syne, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.6 : 1 }}>
               <Trash2 size={13} /> {deleting ? '...' : 'Eliminar'}
             </button>
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border2)' }}>
             {TABS.map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: '9px 4px', border: 'none', background: 'none', fontSize: '13px', fontWeight: '700', color: tab === t.id ? 'var(--blue)' : 'var(--text-muted)', borderBottom: tab === t.id ? '2px solid var(--blue)' : '2px solid transparent', cursor: 'pointer' }}>
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                flex: 1, padding: '9px 4px', border: 'none', background: 'none',
+                fontSize: '12px', fontWeight: '700', fontFamily: 'Syne, sans-serif',
+                color: tab === t.id ? 'var(--gold)' : 'var(--text-muted)',
+                borderBottom: tab === t.id ? '2px solid var(--gold)' : '2px solid transparent',
+                cursor: 'pointer', transition: 'color 0.2s'
+              }}>
                 {t.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Contenido */}
+        {/* Content */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
           {loading ? <Spinner /> : <>
 
             {/* TAB DETALLE */}
             {tab === 'info' && <>
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '14px', marginBottom: '14px' }}>
+              <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius)', border: '1px solid var(--border2)', padding: '14px', marginBottom: '14px' }}>
                 {[
-                  ['Capital prestado', fmt(loan.monto)],
-                  [`Interés (${loan.interes}%/mes · ${loan.plazo} meses)`, fmt(total - loan.monto)],
-                  ['Total con intereses', fmt(total)],
-                  ['Ya pagó', fmt(loan.pagado || 0)],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                  ['Capital prestado', fmt(loan.monto), 'var(--text)'],
+                  [`Interés (${loan.interes}%/mes · ${loan.plazo} meses)`, fmt(total - loan.monto), 'var(--gold)'],
+                  ['Total con intereses', fmt(total), 'var(--text)'],
+                  ['Ya pagó', fmt(loan.pagado || 0), '#4fc44f'],
+                ].map(([k, v, c]) => (
+                  <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>{k}</span>
-                    <span style={{ fontWeight: '700' }}>{v}</span>
+                    <span style={{ fontWeight: '700', color: c }}>{v}</span>
                   </div>
                 ))}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '800', padding: '10px 0 0', color: deuda > 0 ? 'var(--red)' : 'var(--green)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: '800', padding: '10px 0 0', color: deuda > 0 ? 'var(--red)' : '#4fc44f', fontFamily: 'Syne, sans-serif' }}>
                   <span>Saldo pendiente</span><span>{fmt(deuda)}</span>
                 </div>
                 <ProgressBar pagado={loan.pagado || 0} total={total} />
               </div>
 
               {loan.notas && (
-                <div style={{ background: '#fffbea', border: '1px solid #f5e397', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '14px' }}>
-                  <p style={{ fontSize: '12px', fontWeight: '700', color: '#7a6000', marginBottom: '4px', textTransform: 'uppercase' }}>Notas</p>
-                  <p style={{ fontSize: '14px', color: '#555' }}>{loan.notas}</p>
+                <div style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '14px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gold)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Syne, sans-serif' }}>📝 Notas</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.5 }}>{loan.notas}</p>
                 </div>
               )}
 
               {/* Registrar abono */}
-              <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius)', padding: '14px' }}>
-                <p style={{ fontSize: '12px', fontWeight: '700', color: 'var(--blue)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Registrar abono</p>
-                <input type="number" placeholder="Monto del pago ($)" value={abono} onChange={e => setAbono(e.target.value)}
-                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none', marginBottom: '8px', background: '#fff' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--blue)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}
+              <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius)', border: '1px solid var(--border2)', padding: '14px' }}>
+                <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px', fontFamily: 'Syne, sans-serif' }}>💵 Registrar abono</p>
+                <input
+                  type="number" placeholder="Monto del pago ($)" value={abono}
+                  onChange={e => setAbono(e.target.value)}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border2)'}
                 />
-                <input type="text" placeholder="Nota del pago (opcional)" value={notaAbono} onChange={e => setNotaAbono(e.target.value)}
-                  style={{ width: '100%', padding: '11px 14px', border: '1px solid var(--border)', borderRadius: 'var(--radius)', fontSize: '14px', outline: 'none', marginBottom: '10px', background: '#fff' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--blue)'} onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                <input
+                  type="text" placeholder="Nota del pago (opcional)" value={notaAbono}
+                  onChange={e => setNotaAbono(e.target.value)}
+                  style={{ ...inputStyle, marginBottom: '10px' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border2)'}
                 />
                 <Btn onClick={handleAbono} disabled={saving} style={{ width: '100%' }}>
-                  <CheckCircle size={18} /> {saving ? 'Guardando...' : 'Registrar pago'}
+                  <CheckCircle size={17} /> {saving ? 'Guardando...' : 'Registrar pago'}
                 </Btn>
               </div>
             </>}
@@ -249,15 +280,19 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
             {/* TAB PAGOS */}
             {tab === 'pagos' && <>
               {pagosHist.length === 0
-                ? <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Sin pagos registrados aún</div>
+                ? <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>Sin pagos registrados aún</div>
                 : pagosHist.map((p, i) => (
-                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < pagosHist.length - 1 ? '1px solid var(--bg)' : 'none' }}>
-                    <div>
-                      <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--green)' }}>{fmt(p.monto)}</p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(p.created_at).toLocaleDateString('es-CO')}</p>
-                      {p.nota && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{p.nota}</p>}
+                  <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 0', borderBottom: i < pagosHist.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ background: 'rgba(45,106,45,0.15)', borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <CheckCircle size={18} color="#4fc44f" />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '14px', fontWeight: '700', color: '#4fc44f', fontFamily: 'Syne, sans-serif' }}>{fmt(p.monto)}</p>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(p.created_at).toLocaleDateString('es-CO')}</p>
+                        {p.nota && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{p.nota}</p>}
+                      </div>
                     </div>
-                    <CheckCircle size={20} color="var(--green)" />
                   </div>
                 ))
               }
@@ -267,24 +302,24 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
             {tab === 'fotos' && <>
               <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFoto} style={{ display: 'none' }} />
               <Btn onClick={() => fileRef.current.click()} disabled={uploading} style={{ width: '100%', marginBottom: '14px' }} variant="secondary">
-                <Camera size={18} /> {uploading ? 'Subiendo...' : 'Agregar foto / comprobante'}
+                <Camera size={17} /> {uploading ? 'Subiendo...' : 'Agregar foto / comprobante'}
               </Btn>
               {fotos.length === 0
-                ? <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                    <Camera size={40} style={{ opacity: 0.3, marginBottom: '10px' }} />
-                    <p>Sin fotos aún. Agrega comprobantes, cédulas o facturas.</p>
+                ? <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                    <Camera size={44} style={{ opacity: 0.2, marginBottom: '12px', display: 'block', margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '14px' }}>Sin fotos aún.<br />Agrega comprobantes, cédulas o facturas.</p>
                   </div>
                 : <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     {fotos.map(f => (
-                      <div key={f.id} style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)', aspectRatio: '1' }}>
+                      <div key={f.id} style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border2)', aspectRatio: '1', background: 'var(--surface2)' }}>
                         <img src={f.url} alt={f.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button onClick={() => handleDeleteFoto(f)} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                          <Trash2 size={14} color="white" />
+                        <button onClick={() => handleDeleteFoto(f)} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <Trash2 size={13} color="white" />
                         </button>
-                        <a href={f.url} target="_blank" rel="noopener" style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Download size={14} color="white" />
+                        <a href={f.url} target="_blank" rel="noopener" style={{ position: 'absolute', bottom: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <Download size={13} color="white" />
                         </a>
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.6))', padding: '20px 8px 6px' }}>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', padding: '20px 8px 6px' }}>
                           <p style={{ fontSize: '10px', color: 'white', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.nombre}</p>
                         </div>
                       </div>
