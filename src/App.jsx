@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import Login from './components/Login'
 import LoadingScreen from './components/LoadingScreen'
+import WelcomeScreen from './components/WelcomeScreen'
 import { Topbar, Nav } from './components/Layout'
 import Inicio from './components/Inicio'
 import Clientes from './components/Clientes'
@@ -13,6 +14,7 @@ import DetallePrestamo from './components/DetallePrestamo'
 import { calcDebt } from './components/UI'
 
 export default function App() {
+  const [showWelcome, setShowWelcome] = useState(true)
   const [loggedIn, setLoggedIn] = useState(false)
   const [tab, setTab] = useState('inicio')
   const [loans, setLoans] = useState([])
@@ -25,6 +27,7 @@ export default function App() {
 
   const loadAll = async () => {
     setLoading(true)
+    const inicio = Date.now()
     const [{ data: l }, { data: p }] = await Promise.all([
       supabase.from('prestamos').select('*').order('created_at', { ascending: false }),
       supabase.from('pagos').select('*').order('created_at', { ascending: false })
@@ -41,7 +44,13 @@ export default function App() {
     setLoans(updated)
     setPagos(p || [])
     setLoading(false)
-    setFirstLoad(false)
+
+    // La pantalla de carga inicial dura mínimo 5 segundos, aunque los datos lleguen antes
+    if (firstLoad) {
+      const transcurrido = Date.now() - inicio
+      const restante = Math.max(0, 3000 - transcurrido)
+      setTimeout(() => setFirstLoad(false), restante)
+    }
   }
 
   const alertCount = loans.filter(l => {
@@ -51,6 +60,7 @@ export default function App() {
     return dias > l.plazo * 30
   }).length
 
+  if (showWelcome) return <WelcomeScreen onFinish={() => setShowWelcome(false)} />
   if (!loggedIn) return <Login onLogin={() => setLoggedIn(true)} />
   if (firstLoad) return <LoadingScreen />
 
