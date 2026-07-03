@@ -129,47 +129,225 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     onDeleted()
   }
  
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const doc = new jsPDF()
     const total = calcTotal(loan)
     const deuda = calcDebt(loan)
-    doc.setFillColor(10, 10, 10)
-    doc.rect(0, 0, 210, 40, 'F')
-    doc.setFontSize(22); doc.setTextColor(212, 175, 55)
-    doc.text('LuisCredit', 20, 18)
-    doc.setFontSize(11); doc.setTextColor(150, 130, 50)
-    doc.text('Gestion de Prestamos', 20, 27)
-    doc.setFontSize(10); doc.setTextColor(100, 100, 100)
-    doc.text('Resumen de Prestamo', 20, 34)
-    doc.setTextColor(0, 0, 0)
-    doc.setFontSize(16); doc.setTextColor(30, 30, 30)
-    doc.text(loan.nombre, 20, 52)
-    if (loan.telefono) { doc.setFontSize(11); doc.setTextColor(100,100,100); doc.text('Tel: ' + loan.telefono, 20, 60) }
-    let y = loan.telefono ? 72 : 64
-    doc.setFontSize(10); doc.setTextColor(100,100,100); doc.text('CONDICIONES', 20, y); y += 7
-    doc.setTextColor(0,0,0)
-    doc.text('Capital: ' + fmt(loan.monto), 20, y); y += 6
-    doc.text('Interes mensual: ' + loan.interes + '%', 20, y); y += 6
-    doc.text('Plazo: ' + loan.plazo + ' meses', 20, y); y += 6
-    doc.text('Total con intereses: ' + fmt(total), 20, y); y += 12
-    doc.setTextColor(100,100,100); doc.text('ESTADO ACTUAL', 20, y); y += 7
-    doc.setTextColor(0,0,0)
-    doc.text('Pagado: ' + fmt(loan.pagado || 0), 20, y); y += 6
-    doc.setTextColor(180, 0, 0)
-    doc.text('Saldo pendiente: ' + fmt(deuda), 20, y); y += 12
-    if (pagosHist.length > 0) {
-      doc.setTextColor(100,100,100); doc.setFontSize(10)
-      doc.text('HISTORIAL DE PAGOS', 20, y); y += 7
-      doc.setTextColor(0,0,0)
-      pagosHist.forEach(p => {
-        doc.text(new Date(p.created_at).toLocaleDateString('es-CO') + ' — ' + fmt(p.monto) + (p.nota ? ' (' + p.nota + ')' : ''), 20, y)
-        y += 6
+    const pctPagado = total > 0 ? Math.min(100, ((loan.pagado || 0) / total) * 100) : 0
+
+    // Paleta de colores (coherente con la app)
+    const negro = [10, 10, 10]
+    const dorado = [212, 175, 55]
+    const doradoOscuro = [140, 108, 26]
+    const cremaClaro = [250, 246, 233]
+    const bordeClaro = [230, 222, 195]
+    const grisTexto = [110, 110, 110]
+    const textoOscuro = [30, 30, 30]
+    const verde = [40, 125, 60]
+    const verdeClaro = [223, 244, 226]
+    const rojo = [190, 45, 45]
+    const rojoClaro = [253, 228, 228]
+    const doradoClaroBg = [250, 240, 208]
+
+    const margen = 18
+    const anchoUtil = 210 - margen * 2
+
+    // Intentar incrustar el logo real de la app
+    let logoData = null
+    try {
+      const resp = await fetch('/icon-512.png')
+      const blob = await resp.blob()
+      logoData = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
       })
+    } catch (e) { /* si falla, se genera sin logo */ }
+
+    // ===== ENCABEZADO =====
+    doc.setFillColor(...negro)
+    doc.rect(0, 0, 210, 44, 'F')
+    doc.setFillColor(...dorado)
+    doc.rect(0, 44, 210, 1.4, 'F')
+
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', margen, 10, 22, 22) } catch (e) {}
     }
+    const xTitulo = logoData ? margen + 28 : margen
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.setTextColor(...dorado)
+    doc.text('LuisCredit', xTitulo, 24)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(205, 205, 205)
+    doc.text('Gestion profesional de prestamos', xTitulo, 31)
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...dorado)
+    doc.text('COMPROBANTE DE PRESTAMO', 210 - margen, 16, { align: 'right' })
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(180, 180, 180)
+    const fechaHoy = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
+    doc.text(fechaHoy, 210 - margen, 22, { align: 'right' })
+
+    let y = 56
+
+    // ===== TARJETA DEL CLIENTE =====
+    const alturaCard = loan.telefono ? 28 : 22
+    doc.setFillColor(...cremaClaro); doc.setDrawColor(...bordeClaro)
+    doc.roundedRect(margen, y, anchoUtil, alturaCard, 3, 3, 'FD')
+    doc.setFillColor(...dorado)
+    doc.rect(margen, y, 2, alturaCard, 'F')
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(...textoOscuro)
+    doc.text(loan.nombre, margen + 8, y + 11)
+    if (loan.telefono) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...grisTexto)
+      doc.text('Tel: ' + loan.telefono, margen + 8, y + 19)
+    }
+
+    const estadoInfo = {
+      activo:  { texto: 'ACTIVO',  bg: verdeClaro,     color: verde },
+      vencido: { texto: 'VENCIDO', bg: rojoClaro,      color: rojo },
+      pagado:  { texto: 'PAGADO',  bg: doradoClaroBg,  color: doradoOscuro },
+    }
+    const est = estadoInfo[loan.estado] || estadoInfo.activo
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9)
+    const badgeAncho = doc.getTextWidth(est.texto) + 10
+    const badgeX = margen + anchoUtil - badgeAncho - 6
+    const badgeY = y + 6
+    doc.setFillColor(...est.bg)
+    doc.roundedRect(badgeX, badgeY, badgeAncho, 8, 4, 4, 'F')
+    doc.setTextColor(...est.color)
+    doc.text(est.texto, badgeX + badgeAncho / 2, badgeY + 5.5, { align: 'center' })
+
+    y += alturaCard + 10
+
+    // ===== CONDICIONES DEL PRESTAMO =====
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...doradoOscuro)
+    doc.text('CONDICIONES DEL PRESTAMO', margen, y)
+    y += 6
+
+    const condiciones = [
+      { label: 'Capital', valor: fmt(loan.monto) },
+      { label: 'Interes mensual', valor: loan.interes + '%' },
+      { label: 'Plazo', valor: loan.plazo + ' meses' },
+    ]
+    const anchoCard3 = (anchoUtil - 8) / 3
+    condiciones.forEach((c, i) => {
+      const cx = margen + i * (anchoCard3 + 4)
+      doc.setFillColor(252, 252, 250); doc.setDrawColor(...bordeClaro)
+      doc.roundedRect(cx, y, anchoCard3, 20, 2, 2, 'FD')
+      doc.setFillColor(...dorado)
+      doc.rect(cx, y, anchoCard3, 1, 'F')
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...grisTexto)
+      doc.text(c.label.toUpperCase(), cx + 4, y + 8)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...textoOscuro)
+      doc.text(c.valor, cx + 4, y + 16)
+    })
+    y += 28
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...grisTexto)
+    doc.text('Total a cobrar (capital + intereses): ' + fmt(total), margen, y)
+    y += 10
+
+    // ===== PROGRESO DE PAGO =====
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...doradoOscuro)
+    doc.text('PROGRESO DE PAGO', margen, y)
+    doc.setTextColor(...textoOscuro)
+    doc.text(Math.round(pctPagado) + '%', margen + anchoUtil, y, { align: 'right' })
+    y += 5
+
+    doc.setFillColor(235, 232, 220)
+    doc.roundedRect(margen, y, anchoUtil, 5, 2.5, 2.5, 'F')
+    if (pctPagado > 0) {
+      doc.setFillColor(...dorado)
+      doc.roundedRect(margen, y, Math.max(5, anchoUtil * (pctPagado / 100)), 5, 2.5, 2.5, 'F')
+    }
+    y += 13
+
+    const anchoCard2 = (anchoUtil - 4) / 2
+    doc.setFillColor(...verdeClaro)
+    doc.roundedRect(margen, y, anchoCard2, 20, 2, 2, 'F')
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...verde)
+    doc.text('PAGADO', margen + 5, y + 8)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...verde)
+    doc.text(fmt(loan.pagado || 0), margen + 5, y + 16)
+
+    const cx2 = margen + anchoCard2 + 4
+    doc.setFillColor(...rojoClaro)
+    doc.roundedRect(cx2, y, anchoCard2, 20, 2, 2, 'F')
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...rojo)
+    doc.text('SALDO PENDIENTE', cx2 + 5, y + 8)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...rojo)
+    doc.text(fmt(deuda), cx2 + 5, y + 16)
+
+    y += 30
+
+    // Utilidades de paginacion
+    const dibujarPiePagina = () => {
+      doc.setDrawColor(...dorado); doc.setLineWidth(0.4)
+      doc.line(margen, 283, 210 - margen, 283)
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...grisTexto)
+      doc.text('LuisCredit  -  Gestion profesional de prestamos', margen, 288)
+    }
+    const encabezadoTabla = () => {
+      doc.setFillColor(...negro)
+      doc.rect(margen, y, anchoUtil, 8, 'F')
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...dorado)
+      doc.text('FECHA', margen + 4, y + 5.5)
+      doc.text('MONTO', margen + 55, y + 5.5)
+      doc.text('NOTA', margen + 95, y + 5.5)
+      y += 8
+    }
+    const nuevaPaginaSiHaceFalta = (alturaNecesaria) => {
+      if (y + alturaNecesaria > 275) { doc.addPage(); y = 22; return true }
+      return false
+    }
+
+    // ===== HISTORIAL DE PAGOS =====
+    if (pagosHist.length > 0) {
+      nuevaPaginaSiHaceFalta(24)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...doradoOscuro)
+      doc.text('HISTORIAL DE PAGOS', margen, y)
+      y += 7
+      encabezadoTabla()
+
+      pagosHist.forEach((p, i) => {
+        if (nuevaPaginaSiHaceFalta(9)) encabezadoTabla()
+        const filaAltura = 9
+        if (i % 2 === 0) { doc.setFillColor(248, 246, 238); doc.rect(margen, y, anchoUtil, filaAltura, 'F') }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...textoOscuro)
+        doc.text(new Date(p.created_at).toLocaleDateString('es-CO'), margen + 4, y + 6)
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...verde)
+        doc.text(fmt(p.monto), margen + 55, y + 6)
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(...grisTexto)
+        const nota = p.nota ? (p.nota.length > 35 ? p.nota.slice(0, 35) + '...' : p.nota) : '-'
+        doc.text(nota, margen + 95, y + 6)
+        y += filaAltura
+      })
+      y += 8
+    }
+
+    // ===== NOTAS ADICIONALES =====
     if (loan.notas) {
-      y += 4; doc.setTextColor(100,100,100); doc.text('NOTAS', 20, y); y += 7
-      doc.setTextColor(0,0,0); doc.text(loan.notas, 20, y)
+      nuevaPaginaSiHaceFalta(30)
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...doradoOscuro)
+      doc.text('NOTAS ADICIONALES', margen, y)
+      y += 6
+      const lineasNotas = doc.splitTextToSize(loan.notas, anchoUtil - 10)
+      const alturaNotas = lineasNotas.length * 5 + 8
+      doc.setFillColor(...cremaClaro); doc.setDrawColor(...bordeClaro)
+      doc.roundedRect(margen, y, anchoUtil, alturaNotas, 2, 2, 'FD')
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(9.5); doc.setTextColor(...textoOscuro)
+      doc.text(lineasNotas, margen + 5, y + 7)
     }
+
+    // Pie de pagina y numeracion en todas las paginas
+    const totalPaginas = doc.internal.getNumberOfPages()
+    for (let p = 1; p <= totalPaginas; p++) {
+      doc.setPage(p)
+      dibujarPiePagina()
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...grisTexto)
+      doc.text('Pagina ' + p + ' de ' + totalPaginas, 210 - margen, 288, { align: 'right' })
+    }
+
     doc.save('LuisCredit-' + loan.nombre + '.pdf')
   }
  
