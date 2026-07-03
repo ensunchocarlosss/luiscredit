@@ -64,14 +64,41 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     loadData()
   }
 
-  const handleFoto = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+  const comprimirImagen = (file) => new Promise((resolve) => {
+    const maxWidth = 1280
+    const maxHeight = 1280
+    const calidad = 0.7
+    const img = new Image()
+    const reader = new FileReader()
+    reader.onload = (ev) => { img.src = ev.target.result }
+    img.onload = () => {
+      let { width, height } = img
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        if (!blob) { resolve(file); return }
+        const nuevoNombre = file.name.replace(/\.[^.]+$/, '') + '.jpg'
+        resolve(new File([blob], nuevoNombre, { type: 'image/jpeg' }))
+      }, 'image/jpeg', calidad)
+    }
+    img.onerror = () => resolve(file)
+    reader.readAsDataURL(file)
+  })
+    const handleFoto = async (e) => {
+    const original = e.target.files[0]
+    if (!original) return
     setUploading(true)
+    const file = await comprimirImagen(original)
     const ext = file.name.split('.').pop()
     const path = `${loan.id}/${Date.now()}.${ext}`
     const { error: upErr } = await supabase.storage.from('fotos-prestamos').upload(path, file)
-    if (upErr) { alert('Error subiendo foto: ' + upErr.message); setUploading(false); return }
     const { data: { publicUrl } } = supabase.storage.from('fotos-prestamos').getPublicUrl(path)
     await supabase.from('fotos').insert([{ prestamo_id: loan.id, url: publicUrl, nombre: file.name }])
     setUploading(false)
