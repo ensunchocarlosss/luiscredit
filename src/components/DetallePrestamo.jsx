@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { fmt, calcDebt, calcTotal, Btn, Spinner } from './UI'
+import { fmt, calcDebt, calcTotal, Btn, Spinner, formatMiles } from './UI'
 import { X, Camera, Trash2, Download, Phone, FileText, CheckCircle } from 'lucide-react'
 import jsPDF from 'jspdf'
-
+ 
 function ProgressBar({ pagado, total }) {
   const pct = total > 0 ? Math.min(100, (pagado / total) * 100) : 0
   return (
@@ -22,7 +22,7 @@ function ProgressBar({ pagado, total }) {
     </div>
   )
 }
-
+ 
 export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted }) {
   const [fotos, setFotos] = useState([])
   const [pagosHist, setPagosHist] = useState([])
@@ -34,9 +34,9 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
   const [deleting, setDeleting] = useState(false)
   const [tab, setTab] = useState('info')
   const fileRef = useRef()
-
+ 
   useEffect(() => { if (loan) loadData() }, [loan])
-
+ 
   const loadData = async () => {
     setLoading(true)
     const [{ data: f }, { data: p }] = await Promise.all([
@@ -47,7 +47,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     setPagosHist(p || [])
     setLoading(false)
   }
-
+ 
   const handleAbono = async () => {
     const monto = parseFloat(abono)
     if (!monto || monto <= 0) { alert('Ingresa un monto válido.'); return }
@@ -63,7 +63,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     onUpdated()
     loadData()
   }
-
+ 
   const comprimirImagen = (file) => new Promise((resolve) => {
     const maxWidth = 1280
     const maxHeight = 1280
@@ -104,7 +104,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     setUploading(false)
     loadData()
   }
-
+ 
   const handleDeleteFoto = async (foto) => {
     if (!confirm('¿Eliminar esta foto?')) return
     const path = foto.url.split('/fotos-prestamos/')[1]
@@ -112,7 +112,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     await supabase.from('fotos').delete().eq('id', foto.id)
     loadData()
   }
-
+ 
   const handleDeleteCliente = async () => {
     const c1 = confirm(`¿Eliminar a "${loan.nombre}"?\n\nSe eliminarán también todos sus pagos y fotos. Esta acción no se puede deshacer.`)
     if (!c1) return
@@ -127,7 +127,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     setDeleting(false)
     onDeleted()
   }
-
+ 
   const exportPDF = () => {
     const doc = new jsPDF()
     const total = calcTotal(loan)
@@ -171,31 +171,31 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     }
     doc.save('LuisCredit-' + loan.nombre + '.pdf')
   }
-
+ 
   const openWhatsApp = () => {
     if (!loan.telefono) { alert('Este cliente no tiene teléfono registrado.'); return }
     const deuda = calcDebt(loan)
     const msg = `Hola ${loan.nombre}, le recuerdo que tiene un saldo pendiente de ${fmt(deuda)} con LuisCrédit. Gracias.`
     window.open(`https://wa.me/57${loan.telefono.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank')
   }
-
+ 
   if (!loan) return null
   const deuda = calcDebt(loan)
   const total = calcTotal(loan)
-
+ 
   const TABS = [
     { id: 'info',  label: '📋 Detalle' },
     { id: 'pagos', label: `💵 Pagos (${pagosHist.length})` },
     { id: 'fotos', label: `📷 Fotos (${fotos.length})` },
   ]
-
+ 
   const inputStyle = {
     width: '100%', padding: '11px 14px', border: '1px solid var(--border2)',
     borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none',
     background: 'var(--surface2)', color: 'var(--text)', marginBottom: '8px',
     transition: 'border-color 0.2s'
   }
-
+ 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -205,10 +205,10 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 -8px 40px rgba(0,0,0,0.7)'
       }}>
-
+ 
         {/* Handle */}
         <div style={{ width: '40px', height: '4px', background: 'var(--border2)', borderRadius: '2px', margin: '12px auto 0' }} />
-
+ 
         {/* Header */}
         <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
@@ -220,7 +220,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
               <X size={16} />
             </button>
           </div>
-
+ 
           {/* Quick actions */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', margin: '12px 0' }}>
             <button onClick={openWhatsApp} style={{ padding: '8px 4px', background: 'rgba(45,106,45,0.2)', color: '#4fc44f', border: '1px solid rgba(79,196,79,0.25)', borderRadius: 'var(--radius)', fontSize: '11px', fontWeight: '700', fontFamily: 'Syne, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
@@ -233,7 +233,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
               <Trash2 size={13} /> {deleting ? '...' : 'Eliminar'}
             </button>
           </div>
-
+ 
           {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid var(--border2)' }}>
             {TABS.map(t => (
@@ -249,11 +249,11 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
             ))}
           </div>
         </div>
-
+ 
         {/* Content */}
         <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
           {loading ? <Spinner /> : <>
-
+ 
             {/* TAB DETALLE */}
             {tab === 'info' && <>
               <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius)', border: '1px solid var(--border2)', padding: '14px', marginBottom: '14px' }}>
@@ -273,20 +273,21 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
                 </div>
                 <ProgressBar pagado={loan.pagado || 0} total={total} />
               </div>
-
+ 
               {loan.notas && (
                 <div style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '14px' }}>
                   <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gold)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'Syne, sans-serif' }}>📝 Notas</p>
                   <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.5 }}>{loan.notas}</p>
                 </div>
               )}
-
+ 
               {/* Registrar abono */}
               <div style={{ background: 'var(--surface2)', borderRadius: 'var(--radius)', border: '1px solid var(--border2)', padding: '14px' }}>
                 <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '12px', fontFamily: 'Syne, sans-serif' }}>💵 Registrar abono</p>
                 <input
-                  type="number" placeholder="Monto del pago ($)" value={abono}
-                  onChange={e => setAbono(e.target.value)}
+                  type="text" inputMode="numeric" placeholder="Monto del pago ($)"
+                  value={formatMiles(abono)}
+                  onChange={e => setAbono(e.target.value.replace(/\D/g, ''))}
                   style={inputStyle}
                   onFocus={e => e.target.style.borderColor = 'var(--gold)'}
                   onBlur={e => e.target.style.borderColor = 'var(--border2)'}
@@ -303,7 +304,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
                 </Btn>
               </div>
             </>}
-
+ 
             {/* TAB PAGOS */}
             {tab === 'pagos' && <>
               {pagosHist.length === 0
@@ -324,7 +325,7 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
                 ))
               }
             </>}
-
+ 
             {/* TAB FOTOS */}
             {tab === 'fotos' && <>
              <input ref={fileRef} type="file" accept="image/*" onChange={handleFoto} style={{ display: 'none' }} />
@@ -360,3 +361,4 @@ export default function DetallePrestamo({ loan, onClose, onUpdated, onDeleted })
     </div>
   )
 }
+ 
