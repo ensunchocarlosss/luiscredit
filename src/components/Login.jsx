@@ -27,27 +27,25 @@ export default function Login({ onLogin }) {
       justifyContent: 'center', minHeight: '100vh', padding: '24px',
       background: 'radial-gradient(ellipse at top, #0d1a0d 0%, #080c08 60%)'
     }}>
-      {/* Logo */}
-      <div style={{ marginBottom: '8px', position: 'relative' }}>
-        <div style={{
-          width: '80px', height: '80px', borderRadius: '22px',
-          background: 'linear-gradient(135deg, #111811, #0d140d)',
-          border: '2px solid var(--gold)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 0 30px rgba(212,175,55,0.25), 0 8px 32px rgba(0,0,0,0.6)'
-        }}>
-          <span style={{ fontSize: '40px', fontWeight: '800', color: 'var(--gold)', fontFamily: 'Syne, serif', lineHeight: 1 }}>$</span>
-        </div>
-      </div>
+      {/* Logo real */}
+      <img
+        src="/icon-512.png"
+        alt="LuisCrédit"
+        style={{
+          width: '110px', height: '110px',
+          borderRadius: '26px', objectFit: 'cover',
+          marginBottom: '14px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 30px rgba(74,180,74,0.15)'
+        }}
+      />
 
       <h1 style={{
-        fontSize: '34px', fontWeight: '800', fontFamily: 'Syne, sans-serif',
-        letterSpacing: '-1px', marginBottom: '6px',
-        textShadow: '0 0 30px rgba(212,175,55,0.2)'
+        fontSize: '32px', fontWeight: '800', fontFamily: 'Syne, sans-serif',
+        letterSpacing: '-1px', marginBottom: '5px'
       }}>
         Luis<span style={{ color: 'var(--gold)' }}>Crédit</span>
       </h1>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '36px', fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '32px', fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         Gestión profesional de préstamos
       </p>
 
@@ -83,13 +81,13 @@ export default function Login({ onLogin }) {
         </div>
         <button onClick={handleLogin} disabled={loading} style={{
           width: '100%', padding: '14px',
-          background: loading ? 'var(--gold-dark)' : 'linear-gradient(135deg, var(--gold-dark), var(--gold))',
+          background: 'linear-gradient(135deg, var(--gold-dark), var(--gold))',
           color: '#0a0a0a', border: 'none', borderRadius: 'var(--radius)',
           fontSize: '16px', fontWeight: '800', fontFamily: 'Syne, sans-serif',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
           cursor: loading ? 'default' : 'pointer', letterSpacing: '0.03em',
           boxShadow: '0 4px 16px rgba(212,175,55,0.25)',
-          transition: 'opacity 0.2s'
+          opacity: loading ? 0.8 : 1, transition: 'opacity 0.2s'
         }}>
           <LogIn size={18} /> {loading ? 'Entrando...' : 'Entrar'}
         </button>
