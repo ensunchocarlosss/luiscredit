@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { fmt, Btn, Input } from './UI'
+import { fmt, Btn, Input, InputMonto } from './UI'
 import { Save } from 'lucide-react'
-
+ 
 export default function NuevoPrestamo({ onSaved }) {
   const [form, setForm] = useState({ nombre: '', telefono: '', monto: '', interes: '5', plazo: '6', fecha: new Date().toISOString().split('T')[0], notas: '' })
   const [saving, setSaving] = useState(false)
-
+ 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
+ 
   const monto   = parseFloat(form.monto)   || 0
   const interes = parseFloat(form.interes) || 0
   const plazo   = parseInt(form.plazo)     || 0
   const intTotal = monto * (interes / 100) * plazo
   const total    = monto + intTotal
   const showPreview = monto > 0 && interes > 0 && plazo > 0
-
+ 
   const handleSave = async () => {
     if (!form.nombre || !monto || !interes || !plazo) { alert('Completa todos los campos obligatorios.'); return }
     setSaving(true)
@@ -30,7 +30,7 @@ export default function NuevoPrestamo({ onSaved }) {
     setForm({ nombre: '', telefono: '', monto: '', interes: '5', plazo: '6', fecha: new Date().toISOString().split('T')[0], notas: '' })
     onSaved()
   }
-
+ 
   const sectionStyle = {
     background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
     border: '1px solid var(--border2)', padding: '16px', marginBottom: '14px'
@@ -41,27 +41,27 @@ export default function NuevoPrestamo({ onSaved }) {
     letterSpacing: '0.07em', fontFamily: 'Syne, sans-serif',
     display: 'flex', alignItems: 'center', gap: '6px'
   }
-
+ 
   return (
     <div style={{ padding: '14px', paddingBottom: '80px' }}>
       <p style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px', fontFamily: 'Syne, sans-serif' }}>
         Nuevo préstamo
       </p>
-
+ 
       <div style={sectionStyle}>
         <p style={sectionLabel}>👤 Datos del cliente</p>
         <Input label="Nombre completo *" value={form.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Ej: Juan García" />
         <Input label="Teléfono (opcional)" type="tel" value={form.telefono} onChange={e => set('telefono', e.target.value)} placeholder="Ej: 3001234567" />
       </div>
-
+ 
       <div style={sectionStyle}>
         <p style={sectionLabel}>💰 Condiciones del préstamo</p>
-        <Input label="Monto prestado ($) *" type="number" value={form.monto} onChange={e => set('monto', e.target.value)} placeholder="Ej: 500000" min="0" />
+        <InputMonto label="Monto prestado ($) *" value={form.monto} onChange={v => set('monto', v)} placeholder="Ej: 500.000" />
         <Input label="Interés mensual (%) *" type="number" value={form.interes} onChange={e => set('interes', e.target.value)} placeholder="Ej: 5" min="0" step="0.1" />
         <Input label="Plazo (meses) *" type="number" value={form.plazo} onChange={e => set('plazo', e.target.value)} placeholder="Ej: 6" min="1" />
         <Input label="Fecha del préstamo" type="date" value={form.fecha} onChange={e => set('fecha', e.target.value)} />
       </div>
-
+ 
       {showPreview && (
         <div style={{
           background: 'linear-gradient(135deg, #1a1200, #231900)',
@@ -82,7 +82,7 @@ export default function NuevoPrestamo({ onSaved }) {
           </div>
         </div>
       )}
-
+ 
       <div style={sectionStyle}>
         <p style={sectionLabel}>📝 Notas adicionales</p>
         <textarea value={form.notas} onChange={e => set('notas', e.target.value)}
@@ -93,10 +93,11 @@ export default function NuevoPrestamo({ onSaved }) {
           onBlur={e => e.target.style.borderColor = 'var(--border2)'}
         />
       </div>
-
+ 
       <Btn onClick={handleSave} disabled={saving} style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
         <Save size={18} /> {saving ? 'Guardando...' : 'Guardar préstamo'}
       </Btn>
     </div>
   )
 }
+ 
