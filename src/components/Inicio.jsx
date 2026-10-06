@@ -84,7 +84,7 @@ export default function Inicio({ loans, loading, onSelect }) {
                   <Badge estado={l.estado} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '5px' }}>
-                  <span>{l.interes}% mensual · {l.plazo} meses</span>
+                  <span>{l.interes}% mensual · {l.plazo} {Number(l.plazo) === 1 ? 'mes' : 'meses'}</span>
                   <span>{l.fecha}</span>
                 </div>
                 <div style={{ fontSize: '15px', fontWeight: '700', color: deuda > 0 ? 'var(--gold)' : '#4fc44f' }}>

@@ -1,23 +1,31 @@
 import { useState } from 'react'
 import { LogIn, AlertCircle } from 'lucide-react'
-
-const USUARIO = 'Luisensuncho'
-const CLAVE = 'Luisensuncho123*'
+import { supabase } from '../lib/supabase'
 
 export default function Login({ onLogin }) {
-  const [user, setUser] = useState('')
+  const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = () => {
-    if (user.trim() === USUARIO && pass === CLAVE) {
-      setLoading(true)
-      setError(false)
-      setTimeout(() => { setLoading(false); onLogin() }, 600)
-    } else {
+  const handleLogin = async () => {
+    if (loading) return
+    setLoading(true)
+    setError(false)
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: pass
+      })
+
+      if (authError || !data.session) throw new Error('Inicio de sesión fallido')
+      onLogin(data.session)
+    } catch {
       setError(true)
       setPass('')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -56,11 +64,11 @@ export default function Login({ onLogin }) {
       }}>
         <div style={{ marginBottom: '16px' }}>
           <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', fontFamily: 'Syne, sans-serif', display: 'block', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-            Usuario
+            Correo
           </label>
           <input
-            type="text" value={user} onChange={e => setUser(e.target.value)}
-            placeholder="Tu usuario" autoComplete="username"
+            type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="Tu correo" autoComplete="email"
             style={{ width: '100%', padding: '13px 16px', border: '1px solid var(--border2)', borderRadius: 'var(--radius)', fontSize: '15px', outline: 'none', background: 'var(--surface2)', color: 'var(--text)', transition: 'border-color 0.2s' }}
             onFocus={e => e.target.style.borderColor = 'var(--gold)'}
             onBlur={e => e.target.style.borderColor = 'var(--border2)'}
@@ -99,7 +107,7 @@ export default function Login({ onLogin }) {
             display: 'flex', alignItems: 'center', gap: '8px',
             color: 'var(--red)', fontSize: '13px', fontWeight: '600'
           }}>
-            <AlertCircle size={16} /> Usuario o contraseña incorrectos
+            <AlertCircle size={16} /> Correo o contraseña incorrectos
           </div>
         )}
       </div>

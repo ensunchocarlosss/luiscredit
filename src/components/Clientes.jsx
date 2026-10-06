@@ -45,7 +45,7 @@ export default function Clientes({ loans, loading, onSelect }) {
                 </div>
                 {l.telefono && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>📞 {l.telefono}</p>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                  <span>{l.interes}%/mes · {l.plazo} meses</span>
+                  <span>{l.interes}%/mes · {l.plazo} {Number(l.plazo) === 1 ? 'mes' : 'meses'}</span>
                   <span>{l.fecha}</span>
                 </div>
                 <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--gold)' }}>Por cobrar: {fmt(deuda)}</div>
